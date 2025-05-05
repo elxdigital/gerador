@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$tools = new \src\Toolkit();
+$command = $argv[1] ?? null;
+
+match($command) {
+    'map:views' => $tools->mapViews(),
+    default => print("Comando inválido" . PHP_EOL)
+};

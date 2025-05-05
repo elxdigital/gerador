@@ -1,0 +1,15 @@
+{
+  "name": "elxdigital/gerador",
+  "description": "Ferramentas CLI para projetos PHP institucionais",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "SiteToolkit\\": "src/"
+    }
+  },
+  "bin": ["bin/tool"],
+  "require": {
+    "php": ">=8.1"
+  }
+}
