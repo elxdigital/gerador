@@ -3,10 +3,31 @@
 
 require __DIR__ . '/../../../autoload.php';
 
+if (!defined('CONF_VIEW_THEME')) {
+    $projectRoot = getcwd();
+    $envPath = $projectRoot . '/.env';
+
+    if (file_exists($envPath)) {
+        if (!class_exists('Dotenv\\Dotenv')) {
+            echo "Aviso: vlucas/phpdotenv não está instalado. Instale com 'composer require vlucas/phpdotenv' se quiser usar .env local." . PHP_EOL;
+        } else {
+            $dotenv = Dotenv\Dotenv::createImmutable($projectRoot);
+            $dotenv->load();
+        }
+    }
+
+    if (isset($_ENV['CONF_VIEW_THEME'])) {
+        define('CONF_VIEW_THEME', $_ENV['CONF_VIEW_THEME']);
+    } else {
+        define('CONF_VIEW_THEME', 'default_theme');
+    }
+}
+
 $tools = new \ElxDigital\Gerador\Toolkit();
 $command = $argv[1] ?? null;
 
 match($command) {
     'map:views' => $tools->mapViews(),
+    'read:fields' => $tools->scanFieldTags(),
     default => print("Comando inválido" . PHP_EOL)
 };
