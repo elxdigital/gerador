@@ -1,9 +1,9 @@
 #!/usr/bin/env php
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../../../autoload.php';
 
-$tools = new \src\Toolkit();
+$tools = new \ElxDigital\Gerador\Toolkit();
 $command = $argv[1] ?? null;
 
 match($command) {
