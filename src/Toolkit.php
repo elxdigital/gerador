@@ -62,33 +62,98 @@ class Toolkit
             return;
         }
 
-        $arquivos = $files->arquivos;
-        $clienteDir = $files->diretorio;
+        $storagePath = $files->diretorio . DIRECTORY_SEPARATOR . 'storage';
+        if (!is_dir($storagePath)) {
+            mkdir($storagePath, 0755, true);
+        }
 
+        $logFile = $storagePath . DIRECTORY_SEPARATOR . 'tags_mapeadas.txt';
+        $ddlFile = $storagePath . DIRECTORY_SEPARATOR . 'tabelas.sql';
+        $insertFile = $storagePath . DIRECTORY_SEPARATOR . 'inserts.sql';
+
+        $log = "";
+        $ddl = "";
+        $insert = "";
+
+        $arquivos = $files->arquivos;
         foreach ($arquivos as $arquivo) {
-            $path = $clienteDir . DIRECTORY_SEPARATOR . $arquivo;
+            $path = $files->diretorio . DIRECTORY_SEPARATOR . $arquivo;
 
             if (
                 is_file($path) &&
                 str_ends_with($arquivo, '.php') &&
-                $arquivo !== '_theme.php' &&
-                $arquivo !== 'error.php'
+                $arquivo !== 'error.php' &&
+                $arquivo !== '_theme.php'
             ) {
-                $conteudo = file_get_contents($path);
+                $html = file_get_contents($path);
+                $html = '<?xml encoding="UTF-8">' . $html;
 
-                preg_match_all('/<([a-z1-6]+)[^>]*data-field-name="([^"]+)"[^>]*>/i', $conteudo, $matches, PREG_SET_ORDER);
+                libxml_use_internal_errors(true);
+                $dom = new DOMDocument();
+                $dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+                $xpath = new DOMXPath($dom);
+                $nodes = $xpath->query('//*[@data-field-name]');
 
-                if (!empty($matches)) {
-                    echo "Arquivo: $arquivo" . PHP_EOL;
-                    foreach ($matches as $match) {
-                        $tag = $match[1];
-                        $fieldName = $match[2];
-                        echo "- Tag: <$tag>, data-field-name: \"$fieldName\"" . PHP_EOL;
-                    }
-                    echo str_repeat('=', 40) . PHP_EOL;
+                if ($nodes->length === 0) {
+                    continue;
                 }
+
+                $tabela = "pagina_" . pathinfo($arquivo, PATHINFO_FILENAME);
+                $log .= "Arquivo: $arquivo" . PHP_EOL;
+
+                $campos = [];
+                $valores = [];
+
+                foreach ($nodes as $node) {
+                    $tag = $node->nodeName;
+                    $fieldName = $node->getAttribute('data-field-name');
+                    $fieldType = strtolower($node->getAttribute('data-field-type'));
+                    $fieldContent = '';
+
+                    foreach ($node->childNodes as $child) {
+                        $fieldContent .= $dom->saveHTML($child);
+                    }
+
+                    $sqlType = match ($fieldType) {
+                        'textarea', 'mce' => 'TEXT DEFAULT NULL',
+                        'int' => 'INT(11) UNSIGNED DEFAULT NULL',
+                        'date' => 'DATE DEFAULT NULL',
+                        'timestamp' => 'TIMESTAMP NULL DEFAULT NULL',
+                        default => 'VARCHAR(255) DEFAULT NULL',
+                    };
+
+                    $campos[] = "  {$fieldName} {$sqlType}";
+                    $valores[] = "'" . addslashes(trim($fieldContent)) . "'";
+
+                    $log .= "- Tag: <{$tag}>" . PHP_EOL;
+                    $log .= "  data-field-name: \"{$fieldName}\"" . PHP_EOL;
+                    $log .= "  data-field-type: \"{$fieldType}\"" . PHP_EOL;
+                    $log .= "  Conteúdo: {$fieldContent}" . PHP_EOL;
+                }
+
+                // Gerar DDL
+                $ddl .= "CREATE TABLE {$tabela} (\n";
+                $ddl .= "  id INT AUTO_INCREMENT PRIMARY KEY,\n";
+                $ddl .= implode(",\n", $campos) . ",\n";
+                $ddl .= "  ativar INT(1) DEFAULT 1,\n";
+                $ddl .= "  data_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n";
+                $ddl .= "  data_update TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP\n";
+                $ddl .= ");\n\n";
+
+                // Gerar INSERT
+                $colunas = implode(", ", array_map(fn($f) => explode(" ", trim($f))[0], $campos));
+                $valoresSQL = implode(", ", $valores);
+                $insert .= "INSERT INTO {$tabela} ({$colunas}) VALUES ({$valoresSQL});\n\n";
+
+                $log .= str_repeat("=", 40) . PHP_EOL;
             }
         }
+
+        file_put_contents($logFile, $log);
+        file_put_contents($ddlFile, $ddl);
+        file_put_contents($insertFile, $insert);
+
+        echo "Mapeamento finalizado. Arquivos gerados em /storage" . PHP_EOL;
     }
 
     /**
