@@ -53,6 +53,9 @@ class Toolkit
         }
     }
 
+    /**
+     * @return void
+     */
     public function scanFieldTags(): void
     {
         try {
@@ -175,6 +178,37 @@ class Toolkit
 
         echo "Mapeamento finalizado com sucesso. Arquivos gerados em /storage\n";
     }
+
+
+    /**
+     * @return void
+     */
+    public function generate(): void
+    {
+        try {
+            $this->mapViews();
+        } catch (\Exception $mpExcep) {
+            echo $mpExcep->getMessage();
+            return;
+        }
+
+        echo "Views mapeadas com sucesso!\n Iniciando leitura de campos nestes arquivos mapeados.";
+
+        try {
+            $this->scanFieldTags();
+        } catch (\Exception $scanExcep) {
+            echo $scanExcep->getMessage();
+            return;
+        }
+
+        echo "Os campos foras escaneados com sucesso!";
+    }
+
+    /*
+     * ######################
+     * ### MÉTODO PRIVADO ###
+     * ######################
+     */
 
     /**
      * @return object

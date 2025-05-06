@@ -21,5 +21,6 @@ $command = $argv[1] ?? null;
 match($command) {
     'map:views' => $tools->mapViews(),
     'read:fields' => $tools->scanFieldTags(),
+    'generate:all' => $tools->generate(),
     default => print("Comando inválido" . PHP_EOL)
 };
