@@ -103,49 +103,68 @@ class Toolkit
 
                 $campos = [];
                 $valores = [];
+                $foreignKeys = [];
 
                 foreach ($nodes as $node) {
                     $tag = $node->nodeName;
                     $fieldName = $node->getAttribute('data-field-name');
                     $fieldType = strtolower($node->getAttribute('data-field-type'));
+                    $tableRef = $node->getAttribute('data-table-ref');
                     $fieldContent = '';
 
                     foreach ($node->childNodes as $child) {
                         $fieldContent .= $dom->saveHTML($child);
                     }
 
+                    // Tipagem
                     $sqlType = match ($fieldType) {
-                        'textarea', 'mce' => 'TEXT DEFAULT NULL',
+                        'mce', 'textarea' => 'TEXT DEFAULT NULL',
+                        'text', 'varchar' => 'VARCHAR(255) DEFAULT NULL',
                         'int' => 'INT(11) UNSIGNED DEFAULT NULL',
                         'date' => 'DATE DEFAULT NULL',
                         'timestamp' => 'TIMESTAMP NULL DEFAULT NULL',
-                        default => 'VARCHAR(255) DEFAULT NULL',
+                        'foreign' => 'INT(11) UNSIGNED DEFAULT NULL',
+                        default => 'VARCHAR(255) DEFAULT NULL'
                     };
 
                     $campos[] = "  {$fieldName} {$sqlType}";
                     $valores[] = "'" . addslashes(trim($fieldContent)) . "'";
 
-                    $log .= "- Tag: <{$tag}>" . PHP_EOL;
-                    $log .= "  data-field-name: \"{$fieldName}\"" . PHP_EOL;
-                    $log .= "  data-field-type: \"{$fieldType}\"" . PHP_EOL;
-                    $log .= "  Conteúdo: {$fieldContent}" . PHP_EOL;
+                    if ($fieldType === 'foreign') {
+                        if (!empty($tableRef)) {
+                            $foreignKeys[] = "  FOREIGN KEY (`{$fieldName}`) REFERENCES `{$tableRef}`(`id`) ON DELETE SET NULL ON UPDATE CASCADE";
+                        } else {
+                            $log .= "⚠️ Campo \"{$fieldName}\" possui tipo 'foreign' mas está sem 'data-table-ref'. Ignorando FOREIGN KEY.\n";
+                        }
+                    }
+
+                    $log .= "- Tag: <{$tag}>\n";
+                    $log .= "  data-field-name: \"{$fieldName}\"\n";
+                    $log .= "  data-field-type: \"{$fieldType}\"\n";
+                    if (!empty($tableRef)) {
+                        $log .= "  data-table-ref: \"{$tableRef}\"\n";
+                    }
+                    $log .= "  Conteúdo: {$fieldContent}\n";
                 }
 
-                // Gerar DDL
+                // CREATE TABLE
                 $ddl .= "CREATE TABLE {$tabela} (\n";
                 $ddl .= "  id INT AUTO_INCREMENT PRIMARY KEY,\n";
                 $ddl .= implode(",\n", $campos) . ",\n";
                 $ddl .= "  ativar INT(1) DEFAULT 1,\n";
                 $ddl .= "  data_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n";
-                $ddl .= "  data_update TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP\n";
-                $ddl .= ");\n\n";
+                $ddl .= "  data_update TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP";
+                if (!empty($foreignKeys)) {
+                    $ddl .= ",\n" . implode(",\n", $foreignKeys);
+                }
+                $ddl .= "\n);\n\n";
 
-                // Gerar INSERT
-                $colunas = implode(", ", array_map(fn($f) => explode(" ", trim($f))[0], $campos));
-                $valoresSQL = implode(", ", $valores);
-                $insert .= "INSERT INTO {$tabela} ({$colunas}) VALUES ({$valoresSQL});\n\n";
+                // INSERT
+                $columns = implode(", ", array_map(fn($c) => explode(" ", trim($c))[0], $campos));
+                $values = implode(", ", $valores);
+                $insert .= "INSERT INTO {$tabela} ({$columns}) VALUES ({$values});\n\n";
 
-                $log .= str_repeat("=", 40) . PHP_EOL;
+                $log .= str_repeat("=", 40) . "\n";
             }
         }
 
@@ -153,7 +172,7 @@ class Toolkit
         file_put_contents($ddlFile, $ddl);
         file_put_contents($insertFile, $insert);
 
-        echo "Mapeamento finalizado. Arquivos gerados em /storage" . PHP_EOL;
+        echo "Mapeamento finalizado com sucesso. Arquivos gerados em /storage\n";
     }
 
     /**
