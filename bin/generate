@@ -3,16 +3,36 @@
 
 require __DIR__ . '/../../../autoload.php';
 
+$projectRoot = getcwd();
+$envFile = $projectRoot . '/.env';
+
+if (file_exists($envFile) && class_exists(\Dotenv\Dotenv::class)) {
+    $dotenv = \Dotenv\Dotenv::createImmutable($projectRoot);
+    $dotenv->load();
+}
+
 if (!defined('CONF_VIEW_THEME')) {
-    $projectRoot = getcwd();
-    $envFile = $projectRoot . '/.env';
-
-    if (file_exists($envFile) && class_exists(\Dotenv\Dotenv::class)) {
-        $dotenv = \Dotenv\Dotenv::createImmutable($projectRoot);
-        $dotenv->load();
-    }
-
     define('CONF_VIEW_THEME', $_ENV['CONF_VIEW_THEME'] ?? 'default');
+}
+
+if (!defined('CONF_DB_HOST')) {
+    define('CONF_DB_HOST', $_ENV['CONF_DB_HOST'] ?? 'localhost');
+}
+if (!defined('CONF_DB_USER')) {
+    define('CONF_DB_USER', $_ENV['CONF_DB_USER'] ?? 'root');
+}
+if (!defined('CONF_DB_PASS')) {
+    define('CONF_DB_PASS', $_ENV['CONF_DB_PASS'] ?? '');
+}
+if (!defined('CONF_DB_NAME')) {
+    define('CONF_DB_NAME', $_ENV['CONF_DB_NAME'] ?? 'default');
+}
+
+if (!defined('CONF_URL_BASE')) {
+    define('CONF_URL_BASE', 'https://localhost/gerador');
+}
+if (!defined('CONF_URL_TEST')) {
+    define('CONF_URL_TEST', 'https://localhost/gerador');
 }
 
 $tools = new \ElxDigital\Gerador\Toolkit();
@@ -22,5 +42,6 @@ match($command) {
     'map:views' => $tools->mapViews(),
     'read:fields' => $tools->scanFieldTags(),
     'generate:all' => $tools->generate(),
+    'db:apply' => $tools->applyDatabaseChanges(),
     default => print("Comando inválido" . PHP_EOL)
 };

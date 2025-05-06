@@ -31,6 +31,7 @@ class Toolkit
 
         try {
             $files = $this->getArquivos();
+            echo "Mapeando views no diretório: {$files->diretorio}" . PHP_EOL;
         } catch (\Exception $e) {
             echo $e->getMessage();
             return;
@@ -190,6 +191,64 @@ class Toolkit
         echo "Mapeamento finalizado com sucesso. Arquivos gerados em /storage\n";
     }
 
+    /**
+     * @return void
+     */
+    public function applyDatabaseChanges(): void
+    {
+        echo str_repeat("#", 100) . "\n";
+
+        try {
+            $files = $this->getArquivos();
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+            return;
+        }
+
+        $storagePath = $files->diretorio . DIRECTORY_SEPARATOR . 'storage';
+        if (!is_dir($storagePath)) {
+            echo "Não há nenhum diretório storage no caminho mencionado: {$storagePath}";
+            return;
+        }
+
+        $ddlFile = $storagePath . DIRECTORY_SEPARATOR . 'tabelas.sql';
+        $insertFile = $storagePath . DIRECTORY_SEPARATOR . 'inserts.sql';
+
+        if (!is_file($ddlFile)) {
+            echo "Não há arquivo de DDL para criar o banco de dados.";
+            return;
+        }
+
+        if (!is_file($insertFile)) {
+            echo "Não há arquivo com registros para as tabelas do banco de dados.";
+            return;
+        }
+
+        $ddlContent = file_get_contents($ddlFile);
+        if (empty($ddlContent)) {
+            echo "Não há conteúdo no arquivo de DDL.";
+            return;
+        }
+
+        $insertContent = file_get_contents($insertFile);
+        if (empty($insertContent)) {
+            echo "Não há conteúdo no arquivo de inserts.";
+            return;
+        }
+
+        $stmtDDL = \ElxDigital\Gerador\Connect::getInstance()->prepare($ddlContent);
+        if (!$stmtDDL->execute()) {
+            echo "Erro ao criar tabelas no banco de dados.";
+            return;
+        }
+
+        $stmtInserts = \ElxDigital\Gerador\Connect::getInstance()->prepare($insertContent);
+        if (!$stmtInserts->execute()) {
+            echo "Erro ao fazer inserts em tabelas no banco de dados.";
+            return;
+        }
+    }
+
 
     /**
      * ########################
@@ -222,6 +281,15 @@ class Toolkit
         }
 
         echo "Os campos foras escaneados com sucesso!";
+
+        try {
+            $this->applyDatabaseChanges();
+        } catch (\Exception $dbExcep) {
+            echo $dbExcep->getMessage();
+            return;
+        }
+
+        echo "Banco de dados criado com sucesso!";
     }
 
 
@@ -248,8 +316,6 @@ class Toolkit
         if (!is_dir($clienteDir)) {
             throw new \Exception("Nenhum diretório de cliente encontrado dentro de 'themes'." . PHP_EOL);
         }
-
-        echo "Mapeando views no diretório: $clienteDir" . PHP_EOL;
 
         return (object)['diretorio' => $clienteDir, "arquivos" => scandir($clienteDir)];
     }
