@@ -127,7 +127,7 @@ class Toolkit
                         default => 'VARCHAR(255) DEFAULT NULL'
                     };
 
-                    $campos[] = "  {$fieldName} {$sqlType}";
+                    $campos[] = "  `{$fieldName}` {$sqlType}";
                     $valores[] = "'" . addslashes(trim($fieldContent)) . "'";
 
                     if ($fieldType === 'foreign') {
@@ -148,21 +148,22 @@ class Toolkit
                 }
 
                 // CREATE TABLE
-                $ddl .= "CREATE TABLE {$tabela} (\n";
-                $ddl .= "  id INT AUTO_INCREMENT PRIMARY KEY,\n";
+                $ddl .= "CREATE TABLE `{$tabela}` (\n";
+                $ddl .= "  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,\n";
                 $ddl .= implode(",\n", $campos) . ",\n";
-                $ddl .= "  ativar INT(1) DEFAULT 1,\n";
-                $ddl .= "  data_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n";
-                $ddl .= "  data_update TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP";
+                $ddl .= "  `ativar` INT(1) DEFAULT 1,\n";
+                $ddl .= "  `data_create` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n";
+                $ddl .= "  `data_update` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,\n";
+                $ddl .= "  PRIMARY KEY (`id`)";
                 if (!empty($foreignKeys)) {
                     $ddl .= ",\n" . implode(",\n", $foreignKeys);
                 }
                 $ddl .= "\n);\n\n";
 
                 // INSERT
-                $columns = implode(", ", array_map(fn($c) => explode(" ", trim($c))[0], $campos));
+                $columns = implode(", ", array_map(fn($c) => "`" . explode(" ", trim($c))[0] . "`", $campos));
                 $values = implode(", ", $valores);
-                $insert .= "INSERT INTO {$tabela} ({$columns}) VALUES ({$values});\n\n";
+                $insert .= "INSERT INTO `{$tabela}` ({$columns}) VALUES ({$values});\n\n";
 
                 $log .= str_repeat("=", 40) . "\n";
             }
