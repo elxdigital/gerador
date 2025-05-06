@@ -1,107 +1,124 @@
-# Gerador CLI para Sites Institucionais
+# 🚀 Gerador de Código CLI – `elxdigital/gerador`
 
-Ferramenta CLI desenvolvida pela **ElxDigital** para auxiliar na criação e manutenção de projetos PHP institucionais baseados em estrutura modular de temas.
+Este pacote é um conjunto de comandos CLI em PHP para acelerar a criação de estruturas de banco de dados e cadastros a partir de arquivos `.php` com campos HTML dinâmicos (`data-field-name`).  
 
-Este pacote pode ser adicionado como dependência via Composer e executado diretamente a partir do terminal, realizando operações como mapeamento de views, geração de arquivos, entre outros.
+Ele é ideal para projetos institucionais estruturados em PHP + MVC.
 
 ---
 
-## 🚀 Instalação
+## 📦 Instalação
 
-No projeto que você deseja utilizar o gerador, adicione o repositório do GitHub como fonte:
-
-```json
-"repositories": [
-  {
-    "type": "vcs",
-    "url": "https://github.com/elxdigital/gerador"
-  }
-]
-```
-
-Então execute:
+Adicione ao seu projeto via Composer:
 
 ```bash
-composer require elxdigital/gerador:dev-main
+composer require elxdigital/gerador
 ```
 
 ---
 
-## 📦 Requisitos
+## ⚙️ Requisitos
 
-- PHP 8.1 ou superior
-- Composer
-- Estrutura do projeto contendo a pasta `themes/[NOME_DO_TEMA]/`
+- PHP >= 8.1
+- `CONF_VIEW_THEME` definido no seu projeto (pode estar em uma constante ou `.env`)
+- Diretório de views: `themes/{CONF_VIEW_THEME}/`
+- Arquivos `.php` contendo tags com `data-field-name`
 
-> ⚠️ Por padrão, o gerador busca o nome do tema na constante `CONF_VIEW_THEME`. Essa constante deve estar definida no seu projeto como, por exemplo:
+---
 
-```php
-define("CONF_VIEW_THEME", "testes_gerador");
+## 🛠️ Comandos disponíveis
+
+### 🔹 `map:views`
+
+Mapeia todos os arquivos `.php` encontrados no diretório `themes/{CONF_VIEW_THEME}/`, ignorando `error.php` e `_theme.php`.  
+Lista os nomes dos arquivos que representam páginas/visões.
+
+---
+
+### 🔹 `read:fields`
+
+Analisa os arquivos `.php` encontrados e identifica todas as tags HTML que contêm o atributo `data-field-name`.  
+Gera automaticamente:
+
+- `storage/teste.txt` → Log técnico
+- `storage/tabelas.sql` → DDL (CREATE TABLE)
+- `storage/inserts.sql` → INSERTs com os conteúdos das tags
+
+#### 🧩 Tipos reconhecidos (`data-field-type`)
+| HTML / data-field-type | Tipo SQL gerado                      |
+|------------------------|--------------------------------------|
+| `textarea`, `mce`      | `TEXT DEFAULT NULL`                  |
+| `text`, `varchar`      | `VARCHAR(255) DEFAULT NULL`          |
+| `int`                  | `INT(11) UNSIGNED DEFAULT NULL`      |
+| `date`                 | `DATE DEFAULT NULL`                  |
+| `timestamp`            | `TIMESTAMP NULL DEFAULT NULL`        |
+| `foreign`              | `INT(11) UNSIGNED DEFAULT NULL` + `FOREIGN KEY` (requer `data-table-ref`)
+
+#### 📌 Estrutura fixa incluída em todas as tabelas:
+```sql
+id INT AUTO_INCREMENT PRIMARY KEY,
+ativar INT(1) DEFAULT 1,
+data_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+data_update TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+```
+
+#### 🔁 Exemplo de campo foreign:
+```html
+<p data-field-name="imagem" data-field-type="foreign" data-table-ref="arquivo">
+```
+Gera no SQL:
+```sql
+imagem INT(11) UNSIGNED DEFAULT NULL,
+FOREIGN KEY (`imagem`) REFERENCES `arquivo`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ```
 
 ---
 
-## 🧪 Como Usar
+### 🔹 `db:apply`
 
-Após instalado, execute os comandos diretamente na raiz do projeto, usando:
+Aplica os arquivos `storage/tabelas.sql` e `storage/inserts.sql` diretamente no banco de dados.  
+**Certifique-se de que as credenciais do banco estejam configuradas corretamente** via constantes ou `.env`:
+
+```env
+CONF_DB_HOST=localhost
+CONF_DB_NAME=seubanco
+CONF_DB_USER=root
+CONF_DB_PASS=
+```
+
+---
+
+### 🔹 `generate:all`
+
+Executa todos os comandos na sequência:
+
+1. `map:views`
+2. `read:fields`
+3. `db:apply`
+
+Ideal para rodar tudo de uma vez com um único comando:
 
 ```bash
-php vendor/bin/generate <comando>
+php vendor/bin/generate generate:all
 ```
 
 ---
 
-## 🛠️ Comandos Disponíveis
-
-### `map:views`
-
-Lista todas as views `.php` encontradas na raiz do diretório de tema, exceto os arquivos `_theme.php` e `error.php`.
-
-**Exemplo:**
-
-```bash
-php vendor/bin/generate map:views
-```
-
-**Saída esperada:**
+## ✅ Estrutura esperada no projeto
 
 ```
-Mapeando views no diretório: C:\xampp\htdocs\meuprojeto\themes\testes_gerador
-Views encontradas:
-- home.php
-- contato.php
-- quem-somos.php
+project-root/
+│
+├── themes/
+│   └── {CONF_VIEW_THEME}/
+│       ├── home.php
+│       ├── contato.php
+│       └── ...
+│
+├── storage/
+│   ├── teste.txt
+│   ├── tabelas.sql
+│   └── inserts.sql
+│
+├── .env
+└── composer.json
 ```
-
----
-
-## 📁 Estrutura Esperada
-
-```
-/meuprojeto/
-└── themes/
-    └── testes_gerador/
-        ├── home.php
-        ├── contato.php
-        ├── _theme.php        ← ignorado
-        ├── error.php         ← ignorado
-        ├── components/       ← ignorado
-        └── ...
-```
-
----
-
-## 📌 Desenvolvimento Futuro
-
-Em breve novos comandos serão adicionados, como:
-
-- `create:view` – Gerar views com base em templates
-- `scan:components` – Listar componentes reutilizáveis
-- `build:menu` – Gerar menus com base nas views existentes
-- `sync:assets` – Copiar arquivos de estilo/padrão entre projetos
-
----
-
-## 📄 Licença
-
-MIT © [ElxDigital](https://github.com/elxdigital)
