@@ -15,11 +15,20 @@ class Toolkit
         $this->helpers = new Helpers();
     }
 
+
+    /**
+     * ###########################
+     * ### FUNÇÕES INDIVIDUAIS ###
+     * ###########################
+     */
+
     /**
      * @return void
      */
     public function mapViews(): void
     {
+        echo str_repeat("#", 100) . "\n";
+
         try {
             $files = $this->getArquivos();
         } catch (\Exception $e) {
@@ -58,6 +67,8 @@ class Toolkit
      */
     public function scanFieldTags(): void
     {
+        echo str_repeat("#", 100) . "\n";
+
         try {
             $files = $this->getArquivos();
         } catch (\Exception $e) {
@@ -181,10 +192,19 @@ class Toolkit
 
 
     /**
+     * ########################
+     * ### MÉTODO PRINCIPAL ###
+     * ########################
+     */
+
+    /**
      * @return void
      */
     public function generate(): void
     {
+        echo str_repeat("#", 100) . "\n";
+        echo "Iniciando rotinas para criar CRUD's.";
+
         try {
             $this->mapViews();
         } catch (\Exception $mpExcep) {
@@ -203,6 +223,7 @@ class Toolkit
 
         echo "Os campos foras escaneados com sucesso!";
     }
+
 
     /*
      * ######################
