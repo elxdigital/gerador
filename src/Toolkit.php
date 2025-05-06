@@ -89,9 +89,9 @@ class Toolkit
                 $html = '<?xml encoding="UTF-8">' . $html;
 
                 libxml_use_internal_errors(true);
-                $dom = new DOMDocument();
+                $dom = new \DOMDocument();
                 $dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
-                $xpath = new DOMXPath($dom);
+                $xpath = new \DOMXPath($dom);
                 $nodes = $xpath->query('//*[@data-field-name]');
 
                 if ($nodes->length === 0) {
