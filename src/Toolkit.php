@@ -249,6 +249,570 @@ class Toolkit
         }
     }
 
+    /**
+     * @return void
+     */
+    public function createModel(): void
+    {
+        echo str_repeat("#", 100) . "\n";
+
+        try {
+            $files = $this->getArquivos();
+        } catch (\Exception $exception) {
+            echo $exception->getMessage();
+            return;
+        }
+
+        $filePath = $files->diretorio . '/storage/tags_mapeadas.txt';
+        if (!file_exists($filePath)) {
+            echo "O arquivo contendo as tags mapeadas não foi encontrado.\n";
+            return;
+        }
+
+        $conteudo = file_get_contents($filePath);
+        $blocos = preg_split('/=+\s*/', $conteudo);
+        $blocos = array_filter(array_map('trim', $blocos));
+
+        foreach ($blocos as $bloco) {
+            preg_match('/Arquivo:\s*(.+\.php)/', $bloco, $matchArquivo);
+            if (empty($matchArquivo)) continue;
+
+            $arquivo = trim($matchArquivo[1]);
+            $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
+            $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
+            $tableName = "pagina_" . $baseName;
+
+            preg_match_all('/data-field-name:\s*"([^"]+)"\s*data-field-type:\s*"([^"]+)"(?:\s*data-table-ref:\s*"([^"]+)")?/', $bloco, $matches, PREG_SET_ORDER);
+
+            $properties = [];
+            $methods = [];
+            $requiredFields = [];
+
+            $properties[] = "* Properties";
+            foreach ($matches as $match) {
+                $fieldName = $match[1];
+                $fieldType = strtolower($match[2]);
+                $tableRef = $match[3] ?? null;
+
+                $phpType = in_array($fieldType, ['number', 'foreign']) ? 'int' : 'string';
+                $properties[] = "* @property {$phpType}|null \${$fieldName}";
+
+                if ($fieldType === 'foreign' && $tableRef) {
+                    $refClass = str_replace(" ", "", ucwords(str_replace("_", " ", $tableRef)));
+                    $methods[] = "* @method {$refClass}|null {$fieldName}";
+                }
+
+                // Para o construtor
+                // $requiredFields[] = "\"$fieldName\""; todo aplicar lógica para campos required
+            }
+
+            $properties[] = "* @property bool \$ativar";
+            $properties[] = "* @property string \$data_create";
+            $properties[] = "* @property string \$data_update";
+            $properties[] = "* ";
+
+            $phpDoc = implode("\n\t", array_merge($properties, ["", "* Methods"], $methods));
+            $requiredStr = implode(",\n\t\t\t\t", $requiredFields);
+
+            $model = <<<PHP
+<?php
+
+namespace Source\Models;
+
+use Source\Core\Model;
+
+/**
+* Class {$className}
+* @package Source\Models
+*
+{$phpDoc}
+* 
+*/
+class {$className} extends Model
+{
+\t/**
+\t * {$className} constructor.
+\t */
+\tpublic function __construct()
+\t{
+\t\tparent::__construct(
+\t\t\t"{$tableName}",
+\t\t\t["id"],
+\t\t\t[
+\t\t\t\t{$requiredStr}
+\t\t\t]
+\t\t);
+\t}
+}
+PHP;
+
+            $modelDir = ROOT_DIR . 'source/Models';
+            if (!is_dir($modelDir)) {
+                mkdir($modelDir, 0777, true);
+            }
+
+            $filePath = "{$modelDir}/{$className}.php";
+            file_put_contents($filePath, $model);
+            echo "Model gerada: {$filePath}\n";
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function createController(): void
+    {
+        echo str_repeat("#", 100) . "\n";
+
+        try {
+            $files = $this->getArquivos();
+        } catch (\Exception $exception) {
+            echo $exception->getMessage();
+            return;
+        }
+
+        $filePath = $files->diretorio . '/storage/tags_mapeadas.txt';
+        if (!file_exists($filePath)) {
+            echo "O arquivo contendo as tags mapeadas não foi encontrado.\n";
+            return;
+        }
+
+        $conteudo = file_get_contents($filePath);
+        $blocos = preg_split('/=+\s*/', $conteudo);
+        $blocos = array_filter(array_map('trim', $blocos));
+
+        foreach ($blocos as $bloco) {
+            preg_match('/Arquivo:\s*(.+\.php)/', $bloco, $matchArquivo);
+            if (empty($matchArquivo)) continue;
+
+            $arquivo = trim($matchArquivo[1]);
+            $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
+            $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
+            $functionName = lcfirst(str_replace(" ", "", ucwords(str_replace("-", " ", $baseName))));
+            $menuName = $functionName;
+            $crudName = ucfirst(str_replace("-", " ", $baseName));
+
+            preg_match_all('/data-field-name:\s*"([^"]+)"\s*data-field-type:\s*"([^"]+)"/', $bloco, $matches, PREG_SET_ORDER);
+
+            $fields = [];
+            foreach ($matches as $match) {
+                $fields[] = [
+                    'name' => $match[1],
+                    'type' => strtolower($match[2]),
+                    'required' => true // por padrão, todos são required no seu gerador antigo
+                ];
+            }
+
+            $mceFields = array_filter($fields, fn($f) => $f['type'] === 'mce');
+            $requiredFields = array_filter($fields, fn($f) => $f['required']);
+            $nonMceFields = array_filter($fields, fn($f) => $f['type'] !== 'mce');
+
+            $mceAssignments = implode("\n\t\t", array_map(fn($f) => "\${$f['name']} = \$data['{$f['name']}'];", $mceFields));
+            $requiredChecks = '';
+
+// todo habilitar aqui abaixo quando implementar lógica de campos obrigatórios
+//implode("\n\t\t", array_map(fn($f) => <<<PHP
+//if (empty(\$data["{$f['name']}"])) {
+//\t\$json["message"] = \$this->message->error("{$f['name']} é um campo obrigatório")->render();
+//\techo json_encode(\$json);
+//\treturn;
+//}
+//PHP, $requiredFields));
+
+            $assignments = implode("\n\t\t", array_map(fn($f) => "\${$functionName}->{$f['name']} = (!empty(\$data[\"{$f['name']}\"]) ? \$data[\"{$f['name']}\"] : null);", $nonMceFields));
+            $mceAssignmentsToModel = implode("\n\t\t", array_map(fn($f) => "\${$functionName}->{$f['name']} = (!empty(\${$f['name']}) ? \${$f['name']} : null);", $mceFields));
+
+            $controllerCode = <<<PHP
+<?php
+
+namespace Source\App\Admin;
+
+class {$className} extends Admin
+{
+\tpublic function __construct()
+\t{
+\t\tparent::__construct();
+\t}
+
+\tpublic function {$functionName}(): void
+\t{
+\t\t\${$functionName} = (new \\Source\\Models\\{$className}())->findById(1);
+
+\t\t\$head = \$this->seo->render(
+\t\t\t"{$crudName} | " . CONF_SITE_NAME,
+\t\t\tCONF_SITE_DESC,
+\t\t\turl(),
+\t\t\ttheme("/assets/images/share.jpg"),
+\t\t\tfalse
+\t\t);
+
+\t\techo \$this->view->render("widgets/{$menuName}/{$functionName}/{$functionName}", [
+\t\t\t"head" => \$head,
+\t\t\t"menu" => "{$menuName}s",
+\t\t\t"submenu" => "{$functionName}",
+\t\t\t"data" => \${$functionName}
+\t\t]);
+\t}
+
+\tpublic function save(array \$data): void
+\t{
+\t\t{$mceAssignments}
+\t\t\$data = filter_var_array(\$data, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+\t\t{$requiredChecks}
+
+\t\t\${$functionName} = (new \\Source\\Models\\{$className}())->findById(1);
+\t\tif (empty(\${$functionName})) {
+\t\t\t\${$functionName} = new \\Source\\Models\\{$className}();
+\t\t}
+
+\t\t{$assignments}
+\t\t{$mceAssignmentsToModel}
+\t\t\${$functionName}->ativar = (!empty(\$data["ativar"]) ? 1 : 0);
+
+\t\tif (!\${$functionName}->save()) {
+\t\t\t\$json["message"] = \${$functionName}->message()->render();
+\t\t\techo json_encode(\$json);
+\t\t\treturn;
+\t\t}
+
+\t\t\$json["message"] = \$this->message->success("{$crudName} salvo com sucesso")->render();
+\t\t\$json["redirect"] = url("/admin/{$menuName}/{$functionName}/{$functionName}");
+\t\techo json_encode(\$json);
+\t}
+
+\tpublic function active(array \$data)
+\t{
+\t\tif (!empty(\$data) && !empty(\$data["id"])) {
+\t\t\t\$data_id_original = \$data["id"];
+\t\t\t\$data["id"] = intval(\$data["id"]);
+\t\t\t\$data = filter_var(\$data["id"], FILTER_VALIDATE_INT);
+
+\t\t\t\${$functionName} = (new \\Source\\Models\\{$className}())->findById(\$data);
+\t\t\tif(empty(\${$functionName})) {
+\t\t\t\t\$this->message->error("Você tentou ativar um {$crudName} que não existe ou foi removido")->flash();
+\t\t\t\techo json_encode(["redirect" => url("/admin/{$menuName}/{$functionName}/{$functionName}")]);
+\t\t\t\treturn;
+\t\t\t}
+
+\t\t\tif(\${$functionName}->ativar == 1) {
+\t\t\t\t\${$functionName}->ativar = 0;
+
+\t\t\t\tif(!\${$functionName}->save()) {
+\t\t\t\t\t\$json["message"] = \${$functionName}->message()->render();
+\t\t\t\t\techo json_encode(\$json);
+\t\t\t\t\treturn;
+\t\t\t\t}
+
+\t\t\t\t\$json["message"] = \$this->message->success("{$crudName} desativado com sucesso")->render();
+\t\t\t\t\$json["active"] = 'desactive';
+\t\t\t\t\$json["data_id_original"] = \$data_id_original;
+\t\t\t\techo json_encode(\$json);
+\t\t\t\treturn;
+\t\t\t} else {
+\t\t\t\t\${$functionName}->ativar = 1;
+
+\t\t\t\tif(!\${$functionName}->save()) {
+\t\t\t\t\t\$json["message"] = \${$functionName}->message()->render();
+\t\t\t\t\techo json_encode(\$json);
+\t\t\t\t\treturn;
+\t\t\t\t}
+
+\t\t\t\t\$json["message"] = \$this->message->success("{$crudName} ativado com sucesso")->render();
+\t\t\t\t\$json["active"] = 'active';
+\t\t\t\t\$json["data_id_original"] = \$data_id_original;
+\t\t\t\techo json_encode(\$json);
+\t\t\t\treturn;
+\t\t\t}
+
+\t\t\t\$json["message"] = \$this->message->warning("Ocorreu um erro, não é possível continuar")->render();
+\t\t\techo json_encode(\$json);
+\t\t\treturn;
+\t\t}
+\t}
+}
+PHP;
+
+            $controllerDir = ROOT_DIR . 'source/App/Admin';
+            if (!is_dir($controllerDir)) {
+                mkdir($controllerDir, 0777, true);
+            }
+
+            $filePath = "{$controllerDir}/{$className}.php";
+            file_put_contents($filePath, $controllerCode);
+            echo "Controller gerado: {$filePath}\n";
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function createView(): void
+    {
+        echo str_repeat("#", 100) . "\n";
+
+        try {
+            $files = $this->getArquivos();
+        } catch (\Exception $exception) {
+            echo $exception->getMessage();
+            return;
+        }
+
+        $filePath = $files->diretorio . '/storage/tags_mapeadas.txt';
+        if (!file_exists($filePath)) {
+            echo "O arquivo contendo as tags mapeadas não foi encontrado.\n";
+            return;
+        }
+
+        $conteudo = file_get_contents($filePath);
+        $blocos = preg_split('/=+\s*/', $conteudo);
+        $blocos = array_filter(array_map('trim', $blocos));
+
+        foreach ($blocos as $bloco) {
+            preg_match('/Arquivo:\s*(.+\.php)/', $bloco, $matchArquivo);
+            if (empty($matchArquivo)) continue;
+
+            $arquivo = trim($matchArquivo[1]);
+            $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
+            $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
+            $functionName = lcfirst(str_replace(" ", "", ucwords(str_replace("-", " ", $baseName))));
+            $menuName = 'pagina';
+            $crudName = ucfirst(str_replace("-", " ", $baseName));
+
+            preg_match_all('/data-field-name:\s*"([^"]+)"\s*data-field-type:\s*"([^"]+)"/', $bloco, $matches, PREG_SET_ORDER);
+
+            $fields = [];
+            foreach ($matches as $match) {
+                $fields[] = [
+                    'name' => $match[1],
+                    'type' => strtolower($match[2]),
+                    'titulo' => ucwords(str_replace("_", " ", $match[1])),
+                    'required' => true
+                ];
+            }
+
+            $fieldsHtml = '';
+            foreach ($fields as $field) {
+                $fieldsHtml .= "\n";
+                $name = $field['name'];
+                $titulo = $field['titulo'];
+                $required = $field['required'] ? 'required' : '';
+                $value = "<?= !empty(\$data->{$name}) ? \$data->{$name} : null ?>";
+
+                switch ($field['type']) {
+                    case 'textarea':
+                    case 'mce':
+                        $extraClass = $field['type'] === 'mce' ? ' mce' : '';
+                        $fieldsHtml .= <<<HTML
+    <div class="col-lg-12">
+        <div class="form-group has-float-label">
+            <label for="{$name}">{$titulo}</label>
+            <textarea class="form-control{$extraClass}" id="{$name}" name="{$name}" rows="3" {$required}>{$value}</textarea>
+        </div>
+    </div>
+
+HTML;
+                        break;
+                    case 'number':
+                        $fieldsHtml .= <<<HTML
+    <div class="col-lg-12">
+        <div class="form-group has-float-label">
+            <label for="{$name}">{$titulo}</label>
+            <input type="number" class="form-control" id="{$name}" name="{$name}" value="{$value}" placeholder="{$titulo}" {$required}>
+        </div>
+    </div>
+
+HTML;
+                        break;
+                    case 'date':
+                        $fieldsHtml .= <<<HTML
+    <div class="col-lg-12">
+        <div class="form-group has-float-label">
+            <label for="{$name}">{$titulo}</label>
+            <input type="date" class="form-control" id="{$name}" name="{$name}" value="{$value}" placeholder="{$titulo}" {$required}>
+        </div>
+    </div>
+
+HTML;
+                        break;
+                    case 'datatime':
+                        $fieldsHtml .= <<<HTML
+    <div class="col-lg-12">
+        <div class="form-group has-float-label">
+            <label for="{$name}">{$titulo}</label>
+            <input type="datetime-local" class="form-control" id="{$name}" name="{$name}" value="{$value}" placeholder="{$titulo}" {$required}>
+        </div>
+    </div>
+
+HTML;
+                        break;
+                    case 'foreign':
+                        $fieldsHtml .= <<<HTML
+    <div class="col-lg-12">
+        <div class="form-group has-float-label">
+            <hr>
+            <h6 class="tx-primary mb-4">{$titulo}</h6>
+            <?php \$this->insert("components/select-file", [
+                "name" => "{$name}",
+                "selected" => (!empty(\$data->{$name}) ? \$data->{$name} : null),
+                "tipoDeArquivo" => "images"
+            ]); ?>
+            <hr>
+        </div>
+    </div>
+
+HTML;
+                        break;
+                    default:
+                        $fieldsHtml .= <<<HTML
+    <div class="col-lg-12">
+        <div class="form-group has-float-label">
+            <label for="{$name}">{$titulo}</label>
+            <input type="text" class="form-control" id="{$name}" name="{$name}" value="{$value}" placeholder="{$titulo}" {$required}>
+        </div>
+    </div>
+
+HTML;
+                }
+            }
+
+            $viewContent = <<<PHP
+<?php
+/**
+ * @var \\League\\Plates\\Template\\Template \$this
+ * @var \\Source\\Models\\{$className}|null \$data
+ */
+ 
+\$this->layout("_admin");
+?>
+
+<main>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <h1>{$crudName}</h1>
+                <nav class="breadcrumb-container d-none d-sm-block d-lg-inline-block" aria-label="breadcrumb">
+                    <ol class="breadcrumb pt-0">
+                        <li class="breadcrumb-item"><a href="<?= url("/admin/dash/home") ?>">Dashboard</a></li>
+                        <li class="breadcrumb-item">{$menuName}</li>
+                        <li class="breadcrumb-item active" aria-current="page">{$crudName}</li>
+                    </ol>
+                </nav>
+                <div class="separator mb-5"></div>
+            </div>
+        </div>
+
+        <form action="<?= url("/admin/{$menuName}/{$functionName}/save"); ?>" method="post" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card mb-4">
+                        <div class="card-body row">
+                            <div class="col-lg-12">
+                                <h5 class='mb-4'>Informações</h5>
+                            </div>
+{$fieldsHtml}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <?php if (!empty(\$data)) : ?>
+                                <div class="custom-switch custom-switch-primary-inverse mb-4">
+                                    <input class="custom-switch-input js_active float-left" id="ativar" type="checkbox"
+                                        name="ativar" value="1"
+                                        data-action="<?= url("/admin/{$menuName}/{$functionName}/active") ?>"
+                                        data-id="<?= \$data->id ?>" <?= (!empty(\$data->ativar) && \$data->ativar == 1 ? "checked" : "") ?>>
+                                    <label class="custom-switch-btn" for="ativar"></label>
+                                    <h6 class="float-left ml-2 mt-1">Ativar</h6>
+                                </div>
+                            <?php else : ?>
+                                <div class="custom-switch custom-switch-primary-inverse mb-4">
+                                    <input class="custom-switch-input float-left" id="ativar" type="checkbox"
+                                        name="ativar" value="1" checked>
+                                    <label class="custom-switch-btn" for="ativar"></label>
+                                    <h6 class="float-left ml-2 mt-1">Ativar</h6>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <button type="submit" class="btn btn-success mb-1 js_save">SALVAR</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+PHP;
+
+            $viewDir = ROOT_DIR . "themes/admin/widgets/{$menuName}/{$functionName}";
+            if (!is_dir($viewDir)) {
+                mkdir($viewDir, 0777, true);
+            }
+
+            $filePath = "{$viewDir}/{$functionName}.php";
+            file_put_contents($filePath, $viewContent);
+            echo "View gerada: {$filePath}\n";
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function createRoutes(): void
+    {
+        echo str_repeat("#", 100) . "\n";
+
+        try {
+            $files = $this->getArquivos();
+        } catch (\Exception $exception) {
+            echo $exception->getMessage();
+            return;
+        }
+
+        $filePath = $files->diretorio . '/storage/tags_mapeadas.txt';
+        if (!file_exists($filePath)) {
+            echo "O arquivo contendo as tags mapeadas não foi encontrado.\n";
+            return;
+        }
+
+        $conteudo = file_get_contents($filePath);
+        $blocos = preg_split('/=+\s*/', $conteudo);
+        $blocos = array_filter(array_map('trim', $blocos));
+
+        $routesContent = "";
+
+        foreach ($blocos as $bloco) {
+            preg_match('/Arquivo:\s*(.+\.php)/', $bloco, $matchArquivo);
+            if (empty($matchArquivo)) continue;
+
+            $arquivo = trim($matchArquivo[1]);
+            $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
+
+            $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
+            $functionName = lcfirst(str_replace(" ", "", ucwords(str_replace("-", " ", $baseName))));
+            $menuName = 'pagina';
+
+            $routesContent .= "// {$functionName}\n";
+            $routesContent .= "\$route->get('/{$menuName}/{$functionName}/{$functionName}', '{$className}:{$functionName}');\n";
+            $routesContent .= "\$route->post('/{$menuName}/{$functionName}/save', '{$className}:save');\n";
+            $routesContent .= "\$route->post('/{$menuName}/{$functionName}/active', '{$className}:active');\n\n";
+        }
+
+        if (!is_dir($files->diretorio . '/storage')) {
+            mkdir($files->diretorio . '/storage', 0777, true);
+        }
+
+        $destino = $files->diretorio . '/storage/rotas.txt';
+        file_put_contents($destino, $routesContent);
+        echo "Arquivo de rotas gerado: storage/rotas.txt\n";
+    }
+
 
     /**
      * ########################
@@ -290,6 +854,42 @@ class Toolkit
         }
 
         echo "Banco de dados criado com sucesso!";
+
+        try {
+            $this->createRoutes();
+        } catch (\Exception $routesExcep) {
+            echo $routesExcep->getMessage();
+            return;
+        }
+
+        echo "Arquivo com rotas criado com sucesso!";
+
+        try {
+            $this->createModel();
+        } catch (\Exception $modelExcep) {
+            echo $modelExcep->getMessage();
+            return;
+        }
+
+        echo "Model criada com sucesso!";
+
+        try {
+            $this->createController();
+        } catch (\Exception $controllerExcep) {
+            echo $controllerExcep->getMessage();
+            return;
+        }
+
+        echo "Controller criado com sucesso!";
+
+        try {
+            $this->createView();
+        } catch (\Exception $viewExcep) {
+            echo $viewExcep->getMessage();
+            return;
+        }
+
+        echo "View criada com sucesso!";
     }
 
 
