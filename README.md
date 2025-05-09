@@ -38,7 +38,7 @@ Mapeia os arquivos `.php` em `themes/{CONF_VIEW_THEME}/`, ignorando `error.php` 
 Lê os arquivos `.php` mapeados e identifica as tags HTML com `data-field-name`.  
 Gera:
 
-- `storage/teste.txt` → log técnico dos campos
+- `storage/tags_mapeadas.txt` → log técnico dos campos
 - `storage/tabelas.sql` → instruções `CREATE TABLE`
 - `storage/inserts.sql` → instruções `INSERT`
 
