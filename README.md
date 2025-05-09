@@ -19,7 +19,7 @@ composer require elxdigital/gerador
 ## ⚙️ Requisitos
 
 - PHP >= 8.1
-- `CONF_VIEW_THEME` definido no seu projeto (pode estar em uma constante ou `.env`)
+- `CONF_VIEW_THEME` definido no seu projeto (em constante ou `.env`)
 - Diretório de views: `themes/{CONF_VIEW_THEME}/`
 - Arquivos `.php` contendo tags com `data-field-name`
 
@@ -29,19 +29,18 @@ composer require elxdigital/gerador
 
 ### 🔹 `map:views`
 
-Mapeia todos os arquivos `.php` encontrados no diretório `themes/{CONF_VIEW_THEME}/`, ignorando `error.php` e `_theme.php`.  
-Lista os nomes dos arquivos que representam páginas/visões.
+Mapeia os arquivos `.php` em `themes/{CONF_VIEW_THEME}/`, ignorando `error.php` e `_theme.php`.
 
 ---
 
 ### 🔹 `read:fields`
 
-Analisa os arquivos `.php` encontrados e identifica todas as tags HTML que contêm o atributo `data-field-name`.  
-Gera automaticamente:
+Lê os arquivos `.php` mapeados e identifica as tags HTML com `data-field-name`.  
+Gera:
 
-- `storage/teste.txt` → Log técnico
-- `storage/tabelas.sql` → DDL (CREATE TABLE)
-- `storage/inserts.sql` → INSERTs com os conteúdos das tags
+- `storage/teste.txt` → log técnico dos campos
+- `storage/tabelas.sql` → instruções `CREATE TABLE`
+- `storage/inserts.sql` → instruções `INSERT`
 
 #### 🧩 Tipos reconhecidos (`data-field-type`)
 | HTML / data-field-type | Tipo SQL gerado                      |
@@ -53,30 +52,51 @@ Gera automaticamente:
 | `timestamp`            | `TIMESTAMP NULL DEFAULT NULL`        |
 | `foreign`              | `INT(11) UNSIGNED DEFAULT NULL` + `FOREIGN KEY` (requer `data-table-ref`)
 
-#### 📌 Estrutura fixa incluída em todas as tabelas:
-```sql
-id INT AUTO_INCREMENT PRIMARY KEY,
-ativar INT(1) DEFAULT 1,
-data_create TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-data_update TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
-```
+---
 
-#### 🔁 Exemplo de campo foreign:
-```html
-<p data-field-name="imagem" data-field-type="foreign" data-table-ref="arquivo">
-```
-Gera no SQL:
-```sql
-imagem INT(11) UNSIGNED DEFAULT NULL,
-FOREIGN KEY (`imagem`) REFERENCES `arquivo`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+### 🔹 `create:model`
+
+Gera o arquivo `Model` em `source/Models/` baseado nos campos detectados, com docblocks e construtor padrão.  
+A classe gerada se chama `PaginaNomeDaPagina` e a tabela `pagina_nome_da_pagina`.
+
+---
+
+### 🔹 `create:controller`
+
+Gera o `Controller` com os métodos:
+- `nomepagina()` → renderiza a view
+- `save(array $data)` → salva o registro único
+- `active(array $data)` → ativa ou desativa o registro
+
+A classe gerada se chama `PaginaNomeDaPagina` e vai para `source/App/Admin/`.
+
+---
+
+### 🔹 `create:view`
+
+Gera a view padrão (`themes/admin/widgets/{menu}/{funcao}/{funcao}.php`) contendo os campos dinâmicos.  
+Cada campo usa o tipo correto de `input`, `textarea`, `mce`, etc.
+
+---
+
+### 🔹 `create:routes`
+
+Gera o bloco de rotas em `storage/rotas.php` para ser copiado para o `index.php`:
+
+```php
+// exemplo
+$route->get('/contato/contato/contato', 'PaginaContato:contato');
+$route->post('/contato/contato/save', 'PaginaContato:save');
+$route->post('/contato/contato/active', 'PaginaContato:active');
 ```
 
 ---
 
 ### 🔹 `db:apply`
 
-Aplica os arquivos `storage/tabelas.sql` e `storage/inserts.sql` diretamente no banco de dados.  
-**Certifique-se de que as credenciais do banco estejam configuradas corretamente** via constantes ou `.env`:
+Aplica os arquivos `storage/tabelas.sql` e `storage/inserts.sql` no banco de dados atual.
+
+Configure via `.env`:
 
 ```env
 CONF_DB_HOST=localhost
@@ -89,21 +109,19 @@ CONF_DB_PASS=
 
 ### 🔹 `generate:all`
 
-Executa todos os comandos na sequência:
+Executa os seguintes comandos em sequência:
 
 1. `map:views`
 2. `read:fields`
-3. `db:apply`
-
-Ideal para rodar tudo de uma vez com um único comando:
-
-```bash
-php vendor/bin/generate generate:all
-```
+3. `create:model`
+4. `create:controller`
+5. `create:view`
+6. `create:routes`
+7. `db:apply`
 
 ---
 
-## ✅ Estrutura esperada no projeto
+## ✅ Estrutura esperada
 
 ```
 project-root/
@@ -117,8 +135,12 @@ project-root/
 ├── storage/
 │   ├── teste.txt
 │   ├── tabelas.sql
-│   └── inserts.sql
+│   ├── inserts.sql
+│   └── rotas.php
 │
-├── .env
+├── source/
+│   ├── Models/
+│   └── App/Admin/
+│
 └── composer.json
 ```
