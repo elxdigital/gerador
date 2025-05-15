@@ -163,7 +163,7 @@ class Toolkit
                 }
 
                 // EXCLUI TABELA SE EXISTIR
-                $ddl .= "DROP TABLE IF EXISTS `{$tabela}`\n";
+                $ddl .= "DROP TABLE IF EXISTS `{$tabela}`;\n";
 
                 // CREATE TABLE
                 $ddl .= "CREATE TABLE `{$tabela}` (\n";
