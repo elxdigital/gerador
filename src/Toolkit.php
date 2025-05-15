@@ -831,7 +831,7 @@ PHP;
     public function generate(): void
     {
         echo str_repeat("#", 100) . "\n";
-        echo "Iniciando rotinas para criar CRUD's.";
+        echo "Iniciando rotinas para criar CRUD's.\n";
 
         try {
             $this->mapViews();
@@ -840,7 +840,7 @@ PHP;
             return;
         }
 
-        echo "Views mapeadas com sucesso!\n Iniciando leitura de campos nestes arquivos mapeados.";
+        echo "Views mapeadas com sucesso!\nIniciando leitura de campos nestes arquivos mapeados.\n";
 
         try {
             $this->scanFieldTags();
@@ -849,7 +849,7 @@ PHP;
             return;
         }
 
-        echo "Os campos foras escaneados com sucesso!";
+        echo "Os campos foras escaneados com sucesso!\n";
 
         try {
             $this->applyDatabaseChanges();
@@ -858,7 +858,7 @@ PHP;
             return;
         }
 
-        echo "Banco de dados criado com sucesso!";
+        echo "Banco de dados criado com sucesso!\n";
 
         try {
             $this->createRoutes();
@@ -867,7 +867,7 @@ PHP;
             return;
         }
 
-        echo "Arquivo com rotas criado com sucesso!";
+        echo "Arquivo com rotas criado com sucesso!\n";
 
         try {
             $this->createModel();
@@ -876,7 +876,7 @@ PHP;
             return;
         }
 
-        echo "Model criada com sucesso!";
+        echo "Model criada com sucesso!\n";
 
         try {
             $this->createController();
@@ -885,7 +885,7 @@ PHP;
             return;
         }
 
-        echo "Controller criado com sucesso!";
+        echo "Controller criado com sucesso!\n";
 
         try {
             $this->createView();
@@ -894,7 +894,8 @@ PHP;
             return;
         }
 
-        echo "View criada com sucesso!";
+        echo "View criada com sucesso!\n";
+        echo str_repeat("#", 100) . "\n";
     }
 
 
