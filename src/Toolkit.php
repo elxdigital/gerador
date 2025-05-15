@@ -244,12 +244,14 @@ class Toolkit
             echo "Erro ao criar tabelas no banco de dados.";
             return;
         }
+        $stmtDDL->closeCursor();
 
         $stmtInserts = \ElxDigital\Gerador\Connect::getInstance()->prepare($insertContent);
         if (!$stmtInserts->execute()) {
             echo "Erro ao fazer inserts em tabelas no banco de dados.";
             return;
         }
+        $stmtInserts->closeCursor();
     }
 
     /**
