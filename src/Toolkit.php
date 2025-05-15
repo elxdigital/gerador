@@ -162,6 +162,9 @@ class Toolkit
                     $log .= "  Conteúdo: {$fieldContent}\n";
                 }
 
+                // EXCLUI TABELA SE EXISTIR
+                $ddl .= "DROP TABLE IF EXISTS `{$tabela}`\n";
+
                 // CREATE TABLE
                 $ddl .= "CREATE TABLE `{$tabela}` (\n";
                 $ddl .= "  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,\n";
