@@ -187,9 +187,9 @@ class Toolkit
             }
         }
 
-        file_put_contents($logFile, $log);
-        file_put_contents($ddlFile, $ddl);
-        file_put_contents($insertFile, $insert);
+        file_put_contents($logFile, $log, FILE_APPEND);
+        file_put_contents($ddlFile, $ddl, FILE_APPEND);
+        file_put_contents($insertFile, $insert, FILE_APPEND);
 
         echo "Mapeamento finalizado com sucesso. Arquivos gerados em /storage\n";
     }
@@ -357,7 +357,7 @@ PHP;
             }
 
             $filePath = "{$modelDir}/{$className}.php";
-            file_put_contents($filePath, $model);
+            file_put_contents($filePath, $model, FILE_APPEND);
             echo "Model gerada: {$filePath}\n";
         }
     }
@@ -544,7 +544,7 @@ PHP;
             }
 
             $filePath = "{$controllerDir}/{$className}.php";
-            file_put_contents($filePath, $controllerCode);
+            file_put_contents($filePath, $controllerCode, FILE_APPEND);
             echo "Controller gerado: {$filePath}\n";
         }
     }
@@ -761,7 +761,7 @@ PHP;
             }
 
             $filePath = "{$viewDir}/{$functionName}.php";
-            file_put_contents($filePath, $viewContent);
+            file_put_contents($filePath, $viewContent, FILE_APPEND);
             echo "View gerada: {$filePath}\n";
         }
     }
@@ -814,7 +814,7 @@ PHP;
         }
 
         $destino = $files->diretorio . '/storage/rotas.txt';
-        file_put_contents($destino, $routesContent);
+        file_put_contents($destino, $routesContent, FILE_APPEND);
         echo "Arquivo de rotas gerado: storage/rotas.txt\n";
     }
 
