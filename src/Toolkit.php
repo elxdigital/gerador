@@ -286,8 +286,9 @@ class Toolkit
 
             $arquivo = trim($matchArquivo[1]);
             $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
+            $functionName = (str_replace(" ", "_", strtolower(str_replace("-", "_", $baseName))));
             $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
-            $tableName = "pagina_" . $baseName;
+            $tableName = "pagina_" . $functionName;
 
             preg_match_all('/data-field-name:\s*"([^"]+)"\s*data-field-type:\s*"([^"]+)"(?:\s*data-table-ref:\s*"([^"]+)")?/', $bloco, $matches, PREG_SET_ORDER);
 
@@ -296,6 +297,7 @@ class Toolkit
             $requiredFields = [];
 
             $properties[] = "* Properties";
+            $properties[] = "* @property int \$id";
             foreach ($matches as $match) {
                 $fieldName = $match[1];
                 $fieldType = strtolower($match[2]);
