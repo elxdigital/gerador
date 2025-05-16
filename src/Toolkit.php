@@ -823,13 +823,36 @@ PHP;
      */
     public function processFinalAdjustments(): void
     {
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(__DIR__ . '/../../../themes'));
-        foreach ($iterator as $file) {
-            if ($file->isFile() && strtolower($file->getExtension()) === 'php') {
-                $html = file_get_contents($file->getPathname());
-                $replaced = $this->replaceFieldTagsWithPHPVariables($file->getPathname(), $html);
-                $final = $this->injectPhpDocModelHint($file->getFilename(), $replaced);
-                file_put_contents($file->getPathname(), $final);
+        try {
+            $files = $this->getArquivos();
+            echo "Mapeando views no diretório: {$files->diretorio}" . PHP_EOL;
+        } catch (\Exception $e) {
+            echo $e->getMessage();
+            return;
+        }
+
+        $arquivos = $files->arquivos;
+        $clienteDir = $files->diretorio;
+
+        foreach ($arquivos as $arquivo) {
+            $path = $clienteDir . DIRECTORY_SEPARATOR . $arquivo;
+            if (
+                is_file($path) &&
+                str_ends_with($arquivo, '.php') &&
+                $arquivo !== 'error.php' &&
+                $arquivo !== '_theme.php'
+            ) {
+                $fileName = "{$clienteDir}/{$arquivo}";
+                $html = file_get_contents($fileName);
+                if (!str_contains($html, 'data-field-name') &&
+                    !str_contains($html, 'data-field-type') &&
+                    !str_contains($html, 'data-table-ref')) {
+                    continue;
+                }
+
+                $replaced = $this->replaceFieldTagsWithPHPVariables($html);
+                $final = $this->injectPhpDocModelHint($fileName, $replaced);
+                file_put_contents($fileName, $final);
             }
         }
     }
@@ -947,39 +970,21 @@ PHP;
     /**
      * Substitui os campos com data-field-* para variáveis PHP
      */
-    private function replaceFieldTagsWithPHPVariables(string $filePath, string $html): string
+    private function replaceFieldTagsWithPHPVariables(string $content): string
     {
-        libxml_use_internal_errors(true);
-        $dom = new \DOMDocument('1.0', 'UTF-8');
-        $dom->preserveWhiteSpace = false;
-        $dom->formatOutput = true;
+        $pattern = '/<(?P<tag>\w+)(?P<attrs>[^>]*?)\sdata-field-name=["\'](?P<field>[^"\']+)["\'](?P<rest>[^>]*)>(?P<inner>.*?)<\/\1>/si';
 
-        @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+        return preg_replace_callback($pattern, function ($matches) {
+            $tag = $matches['tag'];
+            $attrs = $matches['attrs'] . $matches['rest'];
 
-        $xpath = new \DOMXPath($dom);
-        $tags = $xpath->query('//*[@data-field-name]');
+            $attrs = preg_replace('/\s(data-field-name|data-field-type|data-table-ref)=["\'][^"\']*["\']/', '', $attrs);
+            $attrs = trim($attrs);
 
-        foreach ($tags as $tag) {
-            /** @var \DOMElement $tag */
-            $fieldName = $tag->getAttribute('data-field-name');
-            $class = $tag->getAttribute('class');
+            $openTag = "<{$tag}" . ($attrs ? " {$attrs}" : '') . ">";
 
-            $newTag = "<{$tag->tagName}";
-            if (!empty($class)) {
-                $newTag .= " class=\"$class\"";
-            }
-            $newTag .= "><?= \$pagina->{$fieldName} ?></{$tag->tagName}>";
-
-            $fragment = $dom->createDocumentFragment();
-            $fragment->appendXML($newTag);
-            $tag->parentNode->replaceChild($fragment, $tag);
-        }
-
-        $output = $dom->saveHTML();
-        $output = preg_replace('/^<!DOCTYPE.+?>/', '', $output);
-        $output = preg_replace('/<html.*?>/', '', $output);
-        $output = str_replace(['</html>', '<body>', '</body>', '<head>', '</head>'], '', $output);
-        return trim($output);
+            return "{$openTag}<?= \$pagina->{$matches['field']} ?></{$tag}>";
+        }, $content);
     }
 
     /**
@@ -990,10 +995,14 @@ PHP;
         $base = basename($filename, ".php");
         $className = 'Pagina' . str_replace(' ', '', ucwords(str_replace('-', ' ', $base)));
 
-        return preg_replace(
-            '/(<\?php\s+\/\*\*\s+\* @var \\League\\Plates\\Template\\Template \$this)(.*?\*\/)/s',
-            "$1\n * @var \\Source\\Models\\{$className} \$pagina\n */",
-            $content
-        );
+        if (preg_match('/<\?php\s+\/\*\*\s+\* @var \\\\League\\\\Plates\\\\Template\\\\Template \$this.*?\*\//s', $content)) {
+            return preg_replace(
+                '/(<\?php\s+\/\*\*\s+\* @var \\\\League\\\\Plates\\\\Template\\\\Template \$this)(.*?\*\/)/s',
+                '$1' . "\n * @var \\\\Source\\\\Models\\\\{$className} \$pagina\n */",
+                $content
+            );
+        }
+
+        return $content;
     }
 }
