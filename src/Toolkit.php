@@ -162,6 +162,8 @@ class Toolkit
                     $log .= "  Conteúdo: {$fieldContent}\n";
                 }
 
+                $tabela = str_replace('-', '_', $tabela);
+
                 // EXCLUI TABELA SE EXISTIR
                 $ddl .= "DROP TABLE IF EXISTS `{$tabela}`;\n";
 
