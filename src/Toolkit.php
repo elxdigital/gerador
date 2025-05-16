@@ -395,7 +395,7 @@ PHP;
             $arquivo = trim($matchArquivo[1]);
             $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
             $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
-            $functionName = lcfirst(str_replace(" ", "", ucwords(str_replace("-", " ", $baseName))));
+            $functionName = (str_replace(" ", "_", strtolower(str_replace("-", "_", $baseName))));
             $menuName = $functionName;
             $crudName = ucfirst(str_replace("-", " ", $baseName));
 
@@ -582,7 +582,7 @@ PHP;
             $arquivo = trim($matchArquivo[1]);
             $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
             $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
-            $functionName = lcfirst(str_replace(" ", "", ucwords(str_replace("-", " ", $baseName))));
+            $functionName = (str_replace(" ", "_", strtolower(str_replace("-", "_", $baseName))));
             $menuName = 'pagina';
             $crudName = ucfirst(str_replace("-", " ", $baseName));
 
@@ -802,7 +802,7 @@ PHP;
             $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
 
             $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
-            $functionName = lcfirst(str_replace(" ", "", ucwords(str_replace("-", " ", $baseName))));
+            $functionName = (str_replace(" ", "_", strtolower(str_replace("-", "_", $baseName))));
             $menuName = 'pagina';
 
             $routesContent .= "// {$functionName}\n";
