@@ -414,7 +414,7 @@ PHP;
             $requiredFields = array_filter($fields, fn($f) => $f['required']);
             $nonMceFields = array_filter($fields, fn($f) => $f['type'] !== 'mce');
 
-            $mceAssignments = implode("\n\t\t", array_map(fn($f) => "\${$f['name']} = \$data['{$f['name']}'];", $mceFields));
+            $mceAssignments = implode("\n\t\t", array_map(fn($f) => "\${$f['name']} = \$data['{$f['name']}'] ?? null;", $mceFields));
             $requiredChecks = '';
 
 // todo habilitar aqui abaixo quando implementar lógica de campos obrigatórios
