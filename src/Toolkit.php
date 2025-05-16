@@ -396,7 +396,7 @@ PHP;
             $baseName = pathinfo($arquivo, PATHINFO_FILENAME);
             $className = "Pagina" . str_replace(" ", "", ucwords(str_replace("-", " ", $baseName)));
             $functionName = (str_replace(" ", "_", strtolower(str_replace("-", "_", $baseName))));
-            $menuName = $functionName;
+            $menuName = "pagina";
             $crudName = ucfirst(str_replace("-", " ", $baseName));
 
             preg_match_all('/data-field-name:\s*"([^"]+)"\s*data-field-type:\s*"([^"]+)"/', $bloco, $matches, PREG_SET_ORDER);
