@@ -818,6 +818,22 @@ PHP;
         echo "Arquivo de rotas gerado: storage/rotas.txt\n";
     }
 
+    /**
+     * @return void
+     */
+    public function processFinalAdjustments(): void
+    {
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(__DIR__ . '/../../../themes'));
+        foreach ($iterator as $file) {
+            if ($file->isFile() && strtolower($file->getExtension()) === 'php') {
+                $html = file_get_contents($file->getPathname());
+                $replaced = $this->replaceFieldTagsWithPHPVariables($file->getPathname(), $html);
+                $final = $this->injectPhpDocModelHint($file->getFilename(), $replaced);
+                file_put_contents($file->getPathname(), $final);
+            }
+        }
+    }
+
 
     /**
      * ########################
@@ -896,6 +912,8 @@ PHP;
 
         echo "View criada com sucesso!\n";
         echo str_repeat("#", 100) . "\n";
+
+        $this->processFinalAdjustments();
     }
 
 
@@ -924,5 +942,58 @@ PHP;
         }
 
         return (object)['diretorio' => $clienteDir, "arquivos" => scandir($clienteDir)];
+    }
+
+    /**
+     * Substitui os campos com data-field-* para variáveis PHP
+     */
+    private function replaceFieldTagsWithPHPVariables(string $filePath, string $html): string
+    {
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+
+        @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+
+        $xpath = new \DOMXPath($dom);
+        $tags = $xpath->query('//*[@data-field-name]');
+
+        foreach ($tags as $tag) {
+            /** @var \DOMElement $tag */
+            $fieldName = $tag->getAttribute('data-field-name');
+            $class = $tag->getAttribute('class');
+
+            $newTag = "<{$tag->tagName}";
+            if (!empty($class)) {
+                $newTag .= " class=\"$class\"";
+            }
+            $newTag .= "><?= \$pagina->{$fieldName} ?></{$tag->tagName}>";
+
+            $fragment = $dom->createDocumentFragment();
+            $fragment->appendXML($newTag);
+            $tag->parentNode->replaceChild($fragment, $tag);
+        }
+
+        $output = $dom->saveHTML();
+        $output = preg_replace('/^<!DOCTYPE.+?>/', '', $output);
+        $output = preg_replace('/<html.*?>/', '', $output);
+        $output = str_replace(['</html>', '<body>', '</body>', '<head>', '</head>'], '', $output);
+        return trim($output);
+    }
+
+    /**
+     * Insere o PHPDoc com o tipo da variável $pagina
+     */
+    private function injectPhpDocModelHint(string $filename, string $content): string
+    {
+        $base = basename($filename, ".php");
+        $className = 'Pagina' . str_replace(' ', '', ucwords(str_replace('-', ' ', $base)));
+
+        return preg_replace(
+            '/(<\?php\s+\/\*\*\s+\* @var \\League\\Plates\\Template\\Template \$this)(.*?\*\/)/s',
+            "$1\n * @var \\Source\\Models\\{$className} \$pagina\n */",
+            $content
+        );
     }
 }
