@@ -860,8 +860,13 @@ PHP;
                 }
 
                 $replaced = $this->replaceFieldTagsWithPHPVariables($html);
-                $final = $this->injectPhpDocModelHint($fileName, $replaced);
-                file_put_contents($fileName, $final);
+
+                try {
+                    $final = $this->injectPhpDocModelHint($fileName, $replaced);
+                    file_put_contents($fileName, $final);
+                } catch (\Exception $exception) {
+                    echo "Erro ao ajustar detalhes finais. {$exception->getMessage()}";
+                }
             }
         }
     }
