@@ -982,7 +982,7 @@ PHP;
 
         $clienteDir = $themesDir . DIRECTORY_SEPARATOR . CONF_VIEW_THEME;
         if (!is_dir($clienteDir)) {
-            throw new \Exception("Nenhum diretório de cliente encontrado dentro de 'themes'." . PHP_EOL);
+            throw new \Exception("Nenhum diretório de cliente encontrado dentro de 'themes'. Tentou acessar: {$clienteDir}" . PHP_EOL);
         }
 
         return (object)['diretorio' => $clienteDir, "arquivos" => scandir($clienteDir)];
