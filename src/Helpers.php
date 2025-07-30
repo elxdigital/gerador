@@ -6,7 +6,7 @@ class Helpers
     public function findViewDirectory(string $actualPath, int $count = 3): string
     {
         if ($count == 0) {
-            throw new \RuntimeException("Não foi possível detectar o diretório que deseja. Verifique o caminho solicitado e tente novamente!");
+            throw new \RuntimeException("Não foi possível detectar o diretório que deseja. Verifique o caminho solicitado e tente novamente! Tentativa: {$actualPath}");
         }
 
         $array = explode(DIRECTORY_SEPARATOR, $actualPath);

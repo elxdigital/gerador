@@ -9,7 +9,7 @@ if (file_exists($envFile) && class_exists(\Dotenv\Dotenv::class)) {
     $dotenv->load();
 }
 
-if (!defined($_SERVER['HTTP_HOST'])) {
+if (empty($_SERVER['HTTP_HOST']) || !defined($_SERVER['HTTP_HOST'])) {
     define($_SERVER['HTTP_HOST'], 'localhost');
 }
 
