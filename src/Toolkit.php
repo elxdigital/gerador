@@ -220,13 +220,12 @@ class Toolkit
         }
 
         $ddlFile = $storagePath . DIRECTORY_SEPARATOR . 'tabelas.sql';
-        $insertFile = $storagePath . DIRECTORY_SEPARATOR . 'inserts.sql';
-
         if (!is_file($ddlFile)) {
             echo "Não há arquivo de DDL para criar o banco de dados.";
             return;
         }
 
+        $insertFile = $storagePath . DIRECTORY_SEPARATOR . 'inserts.sql';
         if (!is_file($insertFile)) {
             echo "Não há arquivo com registros para as tabelas do banco de dados.";
             return;
@@ -244,19 +243,22 @@ class Toolkit
             return;
         }
 
-        $stmtDDL = \ElxDigital\Gerador\Connect::getInstance()->prepare($ddlContent);
-        if (!$stmtDDL->execute()) {
-            echo "Erro ao criar tabelas no banco de dados.";
-            return;
-        }
-        $stmtDDL->closeCursor();
+        $pdo = \ElxDigital\Gerador\Connect::getInstance();
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
-        $stmtInserts = \ElxDigital\Gerador\Connect::getInstance()->prepare($insertContent);
-        if (!$stmtInserts->execute()) {
-            echo "Erro ao fazer inserts em tabelas no banco de dados.";
+        try {
+            $pdo->beginTransaction();
+
+            $pdo->exec($ddlContent);
+            $pdo->exec($insertContent);
+
+            $pdo->commit();
+            echo "Tabelas criadas e registros inseridos com sucesso!\n";
+        } catch (\PDOException $e) {
+            $pdo->rollBack();
+            echo "Erro ao aplicar alterações: " . $e->getMessage() . "\n";
             return;
         }
-        $stmtInserts->closeCursor();
     }
 
     /**
