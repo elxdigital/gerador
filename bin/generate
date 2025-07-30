@@ -9,8 +9,12 @@ if (file_exists($envFile) && class_exists(\Dotenv\Dotenv::class)) {
     $dotenv->load();
 }
 
-if (empty($_SERVER['HTTP_HOST']) || !defined($_SERVER['HTTP_HOST'])) {
-    define($_SERVER['HTTP_HOST'], 'localhost');
+if (empty($_SERVER['HTTP_HOST'])) {
+    $_SERVER['HTTP_HOST'] = 'localhost';
+}
+
+if (!defined('__DIR_ROOT__')) {
+    define('__DIR_ROOT__', $_ENV['__DIR_ROOT__'] ?? __DIR__ . "/../../../../");
 }
 
 if (!defined('CONF_VIEW_THEME')) {
@@ -39,10 +43,6 @@ if (!defined('CONF_URL_BASE')) {
 
 if (!defined('CONF_URL_TEST')) {
     define('CONF_URL_TEST', 'https://localhost/gerador');
-}
-
-if (!defined('ROOT_DIR')) {
-    define('ROOT_DIR', $_ENV["ROOT_DIR"] ?? __DIR__);
 }
 
 $tools = new \ElxDigital\Gerador\Toolkit();

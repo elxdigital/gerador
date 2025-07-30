@@ -361,7 +361,7 @@ class {$className} extends Model
 }
 PHP;
 
-            $projectRoot = $this->helpers->findViewDirectory(getcwd());
+            $projectRoot = __DIR_ROOT__;
             $sourceDir = $projectRoot . DIRECTORY_SEPARATOR . 'source';
             $modelDir = "{$sourceDir}/Models";
             if (!is_dir($modelDir)) {
@@ -550,7 +550,7 @@ class {$className} extends Admin
 }
 PHP;
 
-            $projectRoot = $this->helpers->findViewDirectory(getcwd());
+            $projectRoot = __DIR_ROOT__;
             $sourceDir = $projectRoot . DIRECTORY_SEPARATOR . 'source';
             $controllerDir = "{$sourceDir}/App/Admin";
             if (!is_dir($controllerDir)) {
@@ -769,7 +769,7 @@ HTML;
 </main>
 PHP;
 
-            $projectRoot = $this->helpers->findViewDirectory(getcwd());
+            $projectRoot = __DIR_ROOT__;
             $themesDir = $projectRoot . DIRECTORY_SEPARATOR . 'themes';
             $viewDir = "{$themesDir}/admin/widgets/{$menuName}/{$functionName}";
             if (!is_dir($viewDir)) {
@@ -973,7 +973,7 @@ PHP;
      */
     private function getArquivos(): object
     {
-        $projectRoot = $this->helpers->findViewDirectory(getcwd());
+        $projectRoot = __DIR_ROOT__;
 
         $themesDir = $projectRoot . DIRECTORY_SEPARATOR . 'themes';
         if (!is_dir($themesDir)) {
