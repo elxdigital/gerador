@@ -363,7 +363,7 @@ PHP;
 
             $projectRoot = $this->helpers->findViewDirectory(getcwd());
             $sourceDir = $projectRoot . DIRECTORY_SEPARATOR . 'source';
-            $modelDir = "{$sourceDir}/source/Models";
+            $modelDir = "{$sourceDir}/Models";
             if (!is_dir($modelDir)) {
                 mkdir($modelDir, 0777, true);
             }
