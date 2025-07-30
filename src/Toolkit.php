@@ -244,9 +244,10 @@ class Toolkit
         }
 
         $pdo = \ElxDigital\Gerador\Connect::getInstance();
-        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
         try {
+            $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
             $pdo->beginTransaction();
 
             $pdo->exec($ddlContent);
