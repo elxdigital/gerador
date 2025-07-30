@@ -1,8 +1,6 @@
 /.idea
 .env
 
-/vendor/*
-
 /tmp/cache/models/*
 !/tmp/cache/models/empty
 /tmp/cache/persistent/*
@@ -16,5 +14,3 @@
 
 /logs/*
 !/logs/empty
-
-/vendors/*
