@@ -360,7 +360,9 @@ class {$className} extends Model
 }
 PHP;
 
-            $modelDir = ROOT_DIR . 'source/Models';
+            $projectRoot = $this->helpers->findViewDirectory(getcwd());
+            $sourceDir = $projectRoot . DIRECTORY_SEPARATOR . 'source';
+            $modelDir = "{$sourceDir}/source/Models";
             if (!is_dir($modelDir)) {
                 mkdir($modelDir, 0777, true);
             }
@@ -547,7 +549,9 @@ class {$className} extends Admin
 }
 PHP;
 
-            $controllerDir = ROOT_DIR . 'source/App/Admin';
+            $projectRoot = $this->helpers->findViewDirectory(getcwd());
+            $sourceDir = $projectRoot . DIRECTORY_SEPARATOR . 'source';
+            $controllerDir = "{$sourceDir}/App/Admin";
             if (!is_dir($controllerDir)) {
                 mkdir($controllerDir, 0777, true);
             }
@@ -764,7 +768,9 @@ HTML;
 </main>
 PHP;
 
-            $viewDir = ROOT_DIR . "themes/admin/widgets/{$menuName}/{$functionName}";
+            $projectRoot = $this->helpers->findViewDirectory(getcwd());
+            $themesDir = $projectRoot . DIRECTORY_SEPARATOR . 'themes';
+            $viewDir = "{$themesDir}/admin/widgets/{$menuName}/{$functionName}";
             if (!is_dir($viewDir)) {
                 mkdir($viewDir, 0777, true);
             }
