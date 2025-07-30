@@ -9,6 +9,10 @@ if (file_exists($envFile) && class_exists(\Dotenv\Dotenv::class)) {
     $dotenv->load();
 }
 
+if (!defined($_SERVER['HTTP_HOST'])) {
+    define($_SERVER['HTTP_HOST'], 'localhost');
+}
+
 if (!defined('CONF_VIEW_THEME')) {
     define('CONF_VIEW_THEME', $_ENV['CONF_VIEW_THEME'] ?? 'default');
 }
@@ -16,12 +20,15 @@ if (!defined('CONF_VIEW_THEME')) {
 if (!defined('CONF_DB_HOST')) {
     define('CONF_DB_HOST', $_ENV['CONF_DB_HOST'] ?? 'localhost');
 }
+
 if (!defined('CONF_DB_USER')) {
     define('CONF_DB_USER', $_ENV['CONF_DB_USER'] ?? 'root');
 }
+
 if (!defined('CONF_DB_PASS')) {
     define('CONF_DB_PASS', $_ENV['CONF_DB_PASS'] ?? '');
 }
+
 if (!defined('CONF_DB_NAME')) {
     define('CONF_DB_NAME', $_ENV['CONF_DB_NAME'] ?? 'default');
 }
@@ -29,6 +36,7 @@ if (!defined('CONF_DB_NAME')) {
 if (!defined('CONF_URL_BASE')) {
     define('CONF_URL_BASE', 'https://localhost/gerador');
 }
+
 if (!defined('CONF_URL_TEST')) {
     define('CONF_URL_TEST', 'https://localhost/gerador');
 }
