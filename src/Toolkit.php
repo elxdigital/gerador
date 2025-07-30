@@ -33,7 +33,7 @@ class Toolkit
             $files = $this->getArquivos();
             echo "Mapeando views no diretório: {$files->diretorio}" . PHP_EOL;
         } catch (\Exception $e) {
-            echo $e->getMessage();
+            echo "Erro ao pegar arquivos. {$e->getMessage()}";
             return;
         }
 
@@ -73,7 +73,7 @@ class Toolkit
         try {
             $files = $this->getArquivos();
         } catch (\Exception $e) {
-            echo $e->getMessage();
+            echo "Erro ao pegar arquivos. {$e->getMessage()}";
             return;
         }
 
@@ -209,7 +209,7 @@ class Toolkit
         try {
             $files = $this->getArquivos();
         } catch (\Exception $e) {
-            echo $e->getMessage();
+            echo "Erro ao pegar arquivos. {$e->getMessage()}";
             return;
         }
 
@@ -244,20 +244,19 @@ class Toolkit
         }
 
         $pdo = \ElxDigital\Gerador\Connect::getInstance();
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
         try {
-            $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $pdo->exec($ddlContent);
 
             $pdo->beginTransaction();
-
-            $pdo->exec($ddlContent);
             $pdo->exec($insertContent);
-
             $pdo->commit();
+
             echo "Tabelas criadas e registros inseridos com sucesso!\n";
         } catch (\PDOException $e) {
-            $pdo->rollBack();
             echo "Erro ao aplicar alterações: " . $e->getMessage() . "\n";
+            $pdo->rollBack();
             return;
         }
     }
@@ -272,7 +271,7 @@ class Toolkit
         try {
             $files = $this->getArquivos();
         } catch (\Exception $exception) {
-            echo $exception->getMessage();
+            echo "Erro ao pegar arquivos. {$exception->getMessage()}";
             return;
         }
 
@@ -384,7 +383,7 @@ PHP;
         try {
             $files = $this->getArquivos();
         } catch (\Exception $exception) {
-            echo $exception->getMessage();
+            echo "Erro ao pegar arquivos. {$exception->getMessage()}";
             return;
         }
 
@@ -573,7 +572,7 @@ PHP;
         try {
             $files = $this->getArquivos();
         } catch (\Exception $exception) {
-            echo $exception->getMessage();
+            echo "Erro ao pegar arquivos. {$exception->getMessage()}";
             return;
         }
 
@@ -792,7 +791,7 @@ PHP;
         try {
             $files = $this->getArquivos();
         } catch (\Exception $exception) {
-            echo $exception->getMessage();
+            echo "Erro ao pegar arquivos. {$exception->getMessage()}";
             return;
         }
 
@@ -843,7 +842,7 @@ PHP;
             $files = $this->getArquivos();
             echo "Mapeando views no diretório: {$files->diretorio}" . PHP_EOL;
         } catch (\Exception $e) {
-            echo $e->getMessage();
+            echo "Erro ao pegar arquivos. {$e->getMessage()}";
             return;
         }
 
