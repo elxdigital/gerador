@@ -192,9 +192,9 @@ class Toolkit
             }
         }
 
-        file_put_contents($logFile, $log, FILE_APPEND);
-        file_put_contents($ddlFile, $ddl, FILE_APPEND);
-        file_put_contents($insertFile, $insert, FILE_APPEND);
+        file_put_contents($logFile, $log, LOCK_EX);
+        file_put_contents($ddlFile, $ddl, LOCK_EX);
+        file_put_contents($insertFile, $insert, LOCK_EX);
 
         echo "Mapeamento finalizado com sucesso. Arquivos gerados em /storage\n";
     }
@@ -368,7 +368,7 @@ PHP;
             }
 
             $filePath = "{$modelDir}/{$className}.php";
-            file_put_contents($filePath, $model, FILE_APPEND);
+            file_put_contents($filePath, $model, LOCK_EX);
             echo "Model gerada: {$filePath}\n";
         }
     }
@@ -557,7 +557,7 @@ PHP;
             }
 
             $filePath = "{$controllerDir}/{$className}.php";
-            file_put_contents($filePath, $controllerCode, FILE_APPEND);
+            file_put_contents($filePath, $controllerCode, LOCK_EX);
             echo "Controller gerado: {$filePath}\n";
         }
     }
@@ -776,7 +776,7 @@ PHP;
             }
 
             $filePath = "{$viewDir}/{$functionName}.php";
-            file_put_contents($filePath, $viewContent, FILE_APPEND);
+            file_put_contents($filePath, $viewContent, LOCK_EX);
             echo "View gerada: {$filePath}\n";
         }
     }
