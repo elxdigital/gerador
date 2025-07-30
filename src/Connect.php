@@ -29,25 +29,10 @@ class Connect
                     self::OPTIONS
                 );
             } catch (\PDOException $exception) {
-                $helpers = new \ElxDigital\Gerador\Helpers();
-                $helpers->redirect("/ops/problemas");
+                echo "Erro ao conectar ao banco de dados. {$exception->getMessage()}";
             }
         }
 
         return self::$instance;
-    }
-
-    /**
-     * Connect constructor.
-     */
-    final private function __construct()
-    {
-    }
-
-    /**
-     * Connect clone.
-     */
-    private function __clone()
-    {
     }
 }
