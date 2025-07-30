@@ -181,7 +181,10 @@ class Toolkit
                 $ddl .= "\n);\n\n";
 
                 // INSERT
-                $columns = implode(", ", array_map(fn($c) => explode(" ", trim($c))[0], $campos));
+                $columnNames = array_map(function(string $campo) {
+                    return trim(explode(' ', trim($campo))[0], '`');
+                }, $campos);
+                $columns = '`' . implode('`, `', $columnNames) . '`';
                 $values = implode(", ", $valores);
                 $insert .= "INSERT INTO `{$tabela}` ({$columns}) VALUES ({$values});\n\n";
 
